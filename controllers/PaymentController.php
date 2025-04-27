@@ -4,9 +4,19 @@ require_once __DIR__ . '/../models/RefundRequest.php';
 
 class PaymentController
 {
-    private $profileId = '132344'; // Given
-    private $serverKey = 'SWJ992BZTN-JHGTJBWDLM-BZJKMR2ZHT'; // Given
-    private $endpoint = 'https://secure-egypt.paytabs.com/payment/request';
+    private $profileId;
+    private $serverKey;
+    private $baseUrl;
+    private $paymentEndpoint;
+
+    public function __construct()
+    {
+        $config = require __DIR__ . '/../config/paytabs_config.php';
+        $this->profileId = $config['profile_id'];
+        $this->serverKey = $config['server_key'];
+        $this->baseUrl = $config['base_url'];
+        $this->paymentEndpoint = $this->baseUrl . '/payment/request'; // Always build from base
+    }
 
     public function createPaymentPage($orderId, $customerData, $amount, $returnUrl)
     {
@@ -34,7 +44,7 @@ class PaymentController
         ];
 
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $this->endpoint);
+        curl_setopt($ch, CURLOPT_URL, $this->paymentEndpoint);
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
             "authorization: {$this->serverKey}",
             "content-type: application/json",
@@ -51,7 +61,7 @@ class PaymentController
 
         $responseArr = json_decode($response, true);
 
-        // Save the payload
+        // Save payment attempt
         PaymentRequest::create($orderId, json_encode($fields), $response);
 
         return $responseArr;
@@ -63,7 +73,6 @@ class PaymentController
         $paymentResult = $request['payment_result']['response_status'] ?? '';
 
         if ($paymentResult == 'A') {
-            // Approved Payment
             $this->updateOrderStatus($orderId, 'paid');
             header("Location: /success.php");
             exit();
