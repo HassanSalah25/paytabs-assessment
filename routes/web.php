@@ -35,6 +35,6 @@ switch (parse_url($request, PHP_URL_PATH)) {
 
     default:
         http_response_code(404);
-        echo "<h1>404 - Not Found 🫠</h1>";
+        echo "<h1>404 - Not Found </h1>";
         break;
 }
